@@ -43,43 +43,36 @@ class ScrapUrl:
         search_btn.click()
         
 
-    def scrap_url(self):
-        def get_href(a_tag_list):
-            url_list = []
-            for a in a_tag_list:
-                url_list.append(a.get('href'))
-            return url_list
-        
+    def scrap01(self):
+        info = ScrapInfo()        
         time.sleep(2)
         res_count = self.driver.find_element_by_id('pageListNo1')
         select = Select(res_count)
         all_options = select.options
-        loop_count = len(all_options)
-        url_list = []
+        loop_count = 1 #len(all_options)
         for i in range(loop_count):
-            html = self.driver.page_source
-            soup = bs(html, 'lxml')
-            list = soup.select('table.re_disp > tbody > tr > td > a')
-            url_list.append(get_href(list)) #結果1ページ分のURLを取得。
+            for j in range(50):
+                #InfoScrap here
+                info.scrap()
+                self.driver.back()     
             next_btn = self.driver.find_element_by_css_selector('#container_cont > div.result.clr > div:nth-child(5) > img')
             next_btn.click()
             time.sleep(2)
-        return url_list
+        
 
 
 class ScrapInfo:
     
-    def scrap(self, url):
-        respons = rq.get(url)
-        print(url, end = "")
-        print(respons.status_code)
-        try:
-            #Scraiping Process here
-            soup = bs(respons, 'lxml')
+    def __init__(self):
+        self.book = WriteExcel()
 
-        except RqExceptions.RequestException as Error:
-            print("Exception Occured")
-            sys.exit(1)
+
+    def scrap(self, html, index):
+        soup = bs(html, 'lxml')
+        perm_day = soup.select("div.scroll-pane > table.re_summ_4 > tbody > tr > td > a")
+        self.book.write_data(index, 1, perm_day.get_text())
+        
+
     
     def call_jis_code(self, key):
         pref_jiscode = {
@@ -135,7 +128,10 @@ class ScrapInfo:
         print(code)
         return code
 
-
+    def convert_year(self, R_year): #和暦記号を西暦へ変換し返す
+        dictionary = {
+            
+        }
 
 
 class WriteExcel:
