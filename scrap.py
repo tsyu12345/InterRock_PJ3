@@ -1,3 +1,4 @@
+from os import write
 import openpyxl as px 
 import requests as rq
 from requests import exceptions as RqExceptions
@@ -11,7 +12,9 @@ from selenium.common.exceptions import NoSuchElementException, WebDriverExceptio
 from selenium.webdriver.support.select import Select
 from bs4 import BeautifulSoup as bs
 
-class ScrapUrl:
+class Scraping:
+    book = px.Workbook()
+    sheet = book.worksheets[0]
     def __init__(self):
         self.options = webdriver.ChromeOptions()
         self.options.add_argument("start-maximized")
@@ -43,37 +46,99 @@ class ScrapUrl:
         search_btn.click()
         
 
-    def scrap01(self):
-        info = ScrapInfo()        
+    def scrap(self, path):
+        info = ScrapInfo(path)
+        info.ready_book()        
         time.sleep(2)
         res_count = self.driver.find_element_by_id('pageListNo1')
         select = Select(res_count)
         all_options = select.options
-        loop_count = 1 #len(all_options)
-        for i in range(loop_count):
-            for j in range(50):
+        loop_count = 2 #len(all_options)
+        for i in range(1, loop_count):
+            for j in range(2, 52):
                 #InfoScrap here
-                info.scrap()
+                company = self.driver.find_element_by_css_selector('#container_cont > table > tbody > tr:nth-child(' + str(j) +  ') > td:nth-child(4) > a')
+                company.click()
+                html = self.driver.page_source
+                info.scrap(html)                        
                 self.driver.back()     
             next_btn = self.driver.find_element_by_css_selector('#container_cont > div.result.clr > div:nth-child(5) > img')
             next_btn.click()
             time.sleep(2)
-        
+        self.driver.quit()
 
+class ScrapInfo(Scraping):
+    def __init__(self, path):
+        self.path = path
 
-class ScrapInfo:
-    
-    def __init__(self):
-        self.book = WriteExcel()
+    def ready_book(self):
+        col_list = [
+            "許可年月", 
+            "許可番号簡易",
+            "商号又は名称（カナ）",
+            "商号又は名称（詳細）",	
+            "代表者の氏名（カナ）",	
+            "代表者の氏名（漢字）",
+            "郵便番号",
+            "都道府県コード",
+            "都道府県",
+            "市区町村・番地・建物",	
+            "電話番号",
+            "法人・個人区分",
+            "資本金額",	
+            "建設業以外の兼業の有無",	
+            "土木工事業",
+            "建築工事業",
+            "大工工事業",
+            "左官工事業",
+            "とび・土工工事業",
+            "石工事業",
+            "屋根工事業",
+            "電気工事業",
+            "管工事業",	
+            "タイル・れんが・ブロツク工事業",
+            "鋼構造物工事業", 
+            "鉄筋工事業",
+            "舗装工事業",
+            "しゆんせつ工事業",
+            "板金工事業",
+            "ガラス工事業",
+            "塗装工事業",
+            "防水工事業",
+            "内装仕上工事業",
+            "機械器具設置工事業",
+            "熱絶縁工事業",
+            "電気通信工事業",
+            "造園工事業",
+            "さく井工事業",
+            "建具工事業",
+            "水道施設工事業",
+            "消防施設工事業",
+            "清掃施設工事業",
+            "許可の有効期間",
+        ]
+        for c in range(1, len(col_list)):
+            self.sheet.cell(row=1, column=c, value=col_list[c])
+        self.book.save(self.path)
 
-
-    def scrap(self, html, index):
+    def scrap(self, html):
+        index = self.sheet.max_row
+        print(index)
         soup = bs(html, 'lxml')
-        perm_day = soup.select("div.scroll-pane > table.re_summ_4 > tbody > tr > td > a")
-        self.book.write_data(index, 1, perm_day.get_text())
-        
+        perm_day = soup.select_one("div.scroll-pane > table.re_summ_4 > tbody > tr > td > a").get_text()
+        self.sheet.cell(row=index, column=1, value=perm_day)
+        perm_num = soup.select_one("#input > div.clr > table > tbody > tr > td").get_text()
+        self.sheet.cell(row=index, column=2, value=perm_num)
+        name_kana = soup.select_one("#input > div:nth-child(1) > table > tbody > tr:nth-child(2) > td > p").get_text()
+        self.sheet.cell(row=index, column=3, value=name_kana)
+        com_name = soup.select_one("#input > div:nth-child(1) > table > tbody > tr:nth-child(2) > td").get_text()
+        self.sheet.cell(row=index, column=4, value=com_name)
+        ceo_kana = soup.select_one("#input > div:nth-child(1) > table > tbody > tr:nth-child(3) > td > p").get_text()
+        self.sheet.cell(row=index, column=5, value=ceo_kana)
+        ceo_name = soup.select_one("#input > div:nth-child(1) > table > tbody > tr:nth-child(3) > td").get_text()
+        self.sheet.cell(row=index, column=6, value=ceo_name)
+        #add other list.
 
-    
     def call_jis_code(self, key):
         pref_jiscode = {
             "北海道": '01',
@@ -134,71 +199,10 @@ class ScrapInfo:
         }
 
 
-class WriteExcel:
-    book = px.Workbook()
-    sheet = book.worksheets[0]
-    def __init__(self):
-        col_list = [
-            "許可年月", 
-            "許可番号簡易",
-            "商号又は名称（カナ）",
-            "商号又は名称（詳細）",	
-            "代表者の氏名（カナ）",	
-            "代表者の氏名（漢字）",
-            "郵便番号",
-            "都道府県コード",
-            "都道府県",
-            "市区町村・番地・建物",	
-            "電話番号",
-            "法人・個人区分",
-            "資本金額",	
-            "建設業以外の兼業の有無",	
-            "土木工事業",
-            "建築工事業",
-            "大工工事業",
-            "左官工事業",
-            "とび・土工工事業",
-            "石工事業",
-            "屋根工事業",
-            "電気工事業",
-            "管工事業",	
-            "タイル・れんが・ブロツク工事業",
-            "鋼構造物工事業", 
-            "鉄筋工事業",
-            "舗装工事業",
-            "しゆんせつ工事業",
-            "板金工事業",
-            "ガラス工事業",
-            "塗装工事業",
-            "防水工事業",
-            "内装仕上工事業",
-            "機械器具設置工事業",
-            "熱絶縁工事業",
-            "電気通信工事業",
-            "造園工事業",
-            "さく井工事業",
-            "建具工事業",
-            "水道施設工事業",
-            "消防施設工事業",
-            "清掃施設工事業",
-            "許可の有効期間",
-        ]
-        for c in range(1, len(col_list)):
-            self.sheet.cell(row=1, column=c, value=col_list[c])
-
-    def write_data(self, index, col, write_data):
-        self.sheet.cell(row=index, column=col, value=write_data)
-    
-    def save_book(self, save_path):
-        self.book.save(save_path)
-
-
-def main(save_path, area):
-    excel = WriteExcel()
-    scrap_url = ScrapUrl()
-    scrap_url.search(area)
-    url_list = scrap_url.scrap_url()
-    print(url_list)
+def main(path, area):
+    scrap = Scraping()
+    scrap.search(area)
+    scrap.scrap(path)
 
 if __name__ == "__main__":
     main("./test.xlsx", "01 北海道")
