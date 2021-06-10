@@ -2,10 +2,11 @@ from os import write
 import openpyxl as px 
 import requests as rq
 from requests import exceptions as RqExceptions
-import threading 
+import jeraconv.jeraconv
 import re 
 import time
 import sys
+import threading
 from selenium import webdriver
 import selenium
 from selenium.common.exceptions import NoSuchElementException, WebDriverException
@@ -15,6 +16,7 @@ from bs4 import BeautifulSoup as bs
 class Scraping:
     book = px.Workbook()
     sheet = book.worksheets[0]
+
     def __init__(self):
         options = webdriver.ChromeOptions()
         options.add_argument("start-maximized")
@@ -70,7 +72,6 @@ class Scraping:
                 self.driver.back()     
             next_btn = self.driver.find_element_by_css_selector('#container_cont > div.result.clr > div:nth-child(5) > img')
             next_btn.click()
-            time.sleep(2)
         self.driver.quit()
         self.book.save(path)
 
@@ -133,6 +134,7 @@ class ScrapInfo(Scraping):
         print(index)
         soup = bs(html, 'lxml')
         perm_day = soup.select_one("div.clr > div > div.scroll-pane > table.re_summ_4 > tbody > tr > td > a").get_text()
+        perm_day = self.wareki_conv(perm_day)
         self.sheet.cell(row=index, column=1, value=perm_day)
         perm_num_str = soup.select_one("#input > div.clr > table > tbody > tr > td").get_text()
         perm_num = perm_num_str.split("　")[1]
@@ -178,11 +180,22 @@ class ScrapInfo(Scraping):
         for c in range(15, 33):
             i = c - 15
             perm_class = perm_data[i].get_text()
-            if perm_class != "":
+            if perm_class in ("1", "2") :
                 self.sheet.cell(row=index, column=c, value="●")
         
         perm_period = soup.select_one('div.clr > div > table.re_summ_5 > tbody > tr > td').get_text()
         self.sheet.cell(row=index, column=self.sheet.max_column, value=perm_period)
+
+    def wareki_conv(self, day_data):
+        j2w = jeraconv.jeraconv.J2W()
+        day_data = day_data.replace("R", "令和")
+        day_data = day_data.replace("H", "平成")
+        day_array = day_data.split("/")
+        day_array[0] += "年"
+        year = j2w.convert(day_array[0])
+        print(year)
+        day = str(year) + "/" + day_array[1] + "/" + day_array[2]
+        return day
 
     def call_jis_code(self, key):
         pref_jiscode = {
@@ -238,18 +251,47 @@ class ScrapInfo(Scraping):
         print(code)
         return code
 
-    def convert_year(self, seireki): #和暦記号を西暦へ変換し返す
-        dictionary = {
-            
-        }
-
 def main(path, area):
     scrap = Scraping()
     scrap.search(area)
     scrap.scrap(path)
 
 if __name__ == "__main__":
-    main("./test.xlsx", "01 北海道")
+
+    main("./Kanagawa.xlsx", "14 神奈川県")
+    main("./Hokaido.xlsx", "01 北海道")
+    main("./Tokyo.xlsx", "13 東京都")
+    main("./Tiba.xlsx", "12 千葉県")
+    main("./Saitama.xlsx", "11 埼玉県")
+    main("./Osaka.xlsx", "27 大阪府")
+    main("./Kyoto.xlsx", "26 京都府")
+    main("./Hyogo.xlsx", "28 兵庫県")
+    main("./Fucuoka.xlsx", "40 福岡県")
+    main("./Saga.xlsx", "41 佐賀県")
+
+
+    """
+    task = [
+        ("./Kanagawa.xlsx", "14 神奈川県"),
+        ("./Hokaido.xlsx", "01 北海道"),
+        ("./Tokyo.xlsx", "13 東京都"),
+        ("./Tiba.xlsx", "12 千葉県"),
+        ("./Saitama.xlsx", "11 埼玉県"),
+        ("./Osaka.xlsx", "27 大阪府"),
+        ("./Kyoto.xlsx", "26 京都府"),
+        ("./Hyogo.xlsx", "28 兵庫県"),
+        ("./Fucuoka.xlsx", "40 福岡県"),
+        ("./Saga.xlsx", "41 佐賀県"),
+    ]
+    ths = []
+    for tk in task:
+        th = threading.Thread(target=main, args=tk)
+        ths.append(th)
+    for th in ths:
+        th.start()
+    """
+        
+
 
 
 
