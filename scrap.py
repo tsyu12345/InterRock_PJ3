@@ -1,14 +1,13 @@
-from os import write
+from PySimpleGUI.PySimpleGUI import Quit
 import openpyxl as px 
 import requests as rq
 from requests import exceptions as RqExceptions
 import jeraconv.jeraconv
+import PySimpleGUI as gui
 import re 
 import time
 import sys
-import threading
 from selenium import webdriver
-import selenium
 from selenium.common.exceptions import NoSuchElementException, WebDriverException
 from selenium.webdriver.support.select import Select
 from bs4 import BeautifulSoup as bs
@@ -251,10 +250,31 @@ class ScrapInfo(Scraping):
         print(code)
         return code
 
-def main(path, area):
-    scrap = Scraping()
-    scrap.search(area)
-    scrap.scrap(path)
+class ProglessBar:
+    def __init__(self, area_len):
+        self.BAR_MAX = area_len
+        self.L = [
+            [gui.Text('抽出処理中')],
+            [gui.ProgressBar(self.BAR_MAX, orientation='h', size=(20,20), key='-PROG-')],
+            [gui.Cancel()]
+        ]
+    
+    
+
+
+def main(path, areas):
+    prog_bar = ProglessBar(len(areas))
+    window = gui.Window('抽出処理中...', layout=prog_bar.L)
+    for i in range(len(areas)):
+        event, values = window.read(timeout=10)
+        scrap = Scraping()
+        window['-PROG-'].update(i)
+        #scrap.search(areas[i])
+        #scrap.scrap(path)
+        if event == 'Cancel' or event == gui.WIN_CLOSED:
+            break
+    window.close()
+    sys.exit
 
 if __name__ == "__main__":
 

@@ -1,6 +1,6 @@
 import PySimpleGUI as gui
 import scrap
-
+import sys
 
 class AreaSelect:
     def lay_out(self):
@@ -39,8 +39,6 @@ class AreaSelect:
         window.close()
         return pref
 
-    
-
 class PathSelect:
 
     def lay_out(self):
@@ -60,6 +58,8 @@ def obj_frame(lay_out_data):
         ]
     return L
 
+
+
 def main():
     gui.theme('BluePurple')
     width = 700
@@ -78,11 +78,21 @@ def main():
         print(event)
         print(value)
         if event in 'エリア選択':
-            area_obj.are_select()
+            pref_list = area_obj.are_select()
+            add = ""
+            for i in range(len(pref_list)):
+                if i == len(pref_list)-1:
+                    add += pref_list[i]
+                else:
+                    add += pref_list[i] + ","
+                win['pref_name'].update(add)
+        if event in '抽出実行':
+            scrap.main(value['path'], pref_list)
         # when window close
         if event in ("Quit", None):
             break
     win.close()
+    sys.exit()
 
 
 main()
