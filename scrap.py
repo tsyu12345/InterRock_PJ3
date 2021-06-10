@@ -62,7 +62,10 @@ class Scraping:
                 company = self.driver.find_element_by_css_selector('#container_cont > table > tbody > tr:nth-child(' + str(j) +  ') > td:nth-child(4) > a')
                 company.click()
                 html = self.driver.page_source
-                info.scrap(html, index)
+                try:
+                    info.scrap(html, index)
+                except AttributeError:
+                    pass
                 index += 1                        
                 self.driver.back()     
             next_btn = self.driver.find_element_by_css_selector('#container_cont > div.result.clr > div:nth-child(5) > img')
@@ -171,7 +174,7 @@ class ScrapInfo(Scraping):
         self.sheet.cell(row=index, column=14, value=kengyou)
 
         #表処理系
-        perm_data = soup.select('table.re_summ_3 > tbody > tr.re_summ_odd > td')
+        perm_data = soup.select('#input > table:nth-child(6) > tbody > tr.re_summ_odd > td')
         for c in range(15, 33):
             i = c - 15
             perm_class = perm_data[i].get_text()
@@ -235,7 +238,7 @@ class ScrapInfo(Scraping):
         print(code)
         return code
 
-    def convert_year(self, R_year): #和暦記号を西暦へ変換し返す
+    def convert_year(self, seireki): #和暦記号を西暦へ変換し返す
         dictionary = {
             
         }
