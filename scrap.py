@@ -16,21 +16,21 @@ class Scraping:
     book = px.Workbook()
     sheet = book.worksheets[0]
     def __init__(self):
-        self.options = webdriver.ChromeOptions()
-        self.options.add_argument("start-maximized")
-        self.options.add_argument("enable-automation")
-        self.options.add_argument("--headless")
-        self.options.add_argument("--no-sandbox")
-        self.options.add_argument("--disable-infobars")
-        self.options.add_argument('--disable-extensions')
-        self.options.add_argument("--disable-dev-shm-usage")
-        self.options.add_argument("--disable-browser-side-navigation")
-        self.options.add_argument("--disable-gpu")
-        self.options.add_argument('--ignore-certificate-errors')
-        self.options.add_argument('--ignore-ssl-errors')
+        options = webdriver.ChromeOptions()
+        options.add_argument("start-maximized")
+        options.add_argument("enable-automation")
+        #options.add_argument("--headless")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-infobars")
+        options.add_argument('--disable-extensions')
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--disable-browser-side-navigation")
+        options.add_argument("--disable-gpu")
+        options.add_argument('--ignore-certificate-errors')
+        options.add_argument('--ignore-ssl-errors')
         prefs = {"profile.default_content_setting_values.notifications": 2}
-        self.options.add_experimental_option("prefs", prefs)
-        self.driver = webdriver.Chrome(executable_path='./chromedriver.exe')
+        options.add_experimental_option("prefs", prefs)
+        self.driver = webdriver.Chrome(executable_path='./chromedriver.exe', options=options)
 
     def search(self, area):
         def select_choice(select_text, element_id):
@@ -51,21 +51,25 @@ class Scraping:
         info.ready_book()        
         time.sleep(2)
         res_count = self.driver.find_element_by_id('pageListNo1')
+        print(res_count)
         select = Select(res_count)
         all_options = select.options
-        loop_count = 2 #len(all_options)
+        loop_count = len(all_options)
+        index = 2
         for i in range(1, loop_count):
             for j in range(2, 52):
                 #InfoScrap here
                 company = self.driver.find_element_by_css_selector('#container_cont > table > tbody > tr:nth-child(' + str(j) +  ') > td:nth-child(4) > a')
                 company.click()
                 html = self.driver.page_source
-                info.scrap(html)                        
+                info.scrap(html, index)
+                index += 1                        
                 self.driver.back()     
             next_btn = self.driver.find_element_by_css_selector('#container_cont > div.result.clr > div:nth-child(5) > img')
             next_btn.click()
             time.sleep(2)
         self.driver.quit()
+        self.book.save(path)
 
 class ScrapInfo(Scraping):
     def __init__(self, path):
@@ -117,39 +121,77 @@ class ScrapInfo(Scraping):
             "清掃施設工事業",
             "許可の有効期間",
         ]
-        for c in range(1, len(col_list)):
-            self.sheet.cell(row=1, column=c, value=col_list[c])
+        for c in range(1, len(col_list)+1):
+            self.sheet.cell(row=1, column=c, value=col_list[c-1])
+        self.sheet.freeze_panes = "A2"
         self.book.save(self.path)
 
-    def scrap(self, html):
-        index = self.sheet.max_row
+    def scrap(self, html, index):
         print(index)
         soup = bs(html, 'lxml')
-        perm_day = soup.select_one("div.scroll-pane > table.re_summ_4 > tbody > tr > td > a").get_text()
+        perm_day = soup.select_one("div.clr > div > div.scroll-pane > table.re_summ_4 > tbody > tr > td > a").get_text()
         self.sheet.cell(row=index, column=1, value=perm_day)
-        perm_num = soup.select_one("#input > div.clr > table > tbody > tr > td").get_text()
+        perm_num_str = soup.select_one("#input > div.clr > table > tbody > tr > td").get_text()
+        perm_num = perm_num_str.split("　")[1]
         self.sheet.cell(row=index, column=2, value=perm_num)
         name_kana = soup.select_one("#input > div:nth-child(1) > table > tbody > tr:nth-child(2) > td > p").get_text()
         self.sheet.cell(row=index, column=3, value=name_kana)
         com_name = soup.select_one("#input > div:nth-child(1) > table > tbody > tr:nth-child(2) > td").get_text()
+        com_name = com_name.replace(name_kana, "")
         self.sheet.cell(row=index, column=4, value=com_name)
         ceo_kana = soup.select_one("#input > div:nth-child(1) > table > tbody > tr:nth-child(3) > td > p").get_text()
         self.sheet.cell(row=index, column=5, value=ceo_kana)
         ceo_name = soup.select_one("#input > div:nth-child(1) > table > tbody > tr:nth-child(3) > td").get_text()
+        ceo_name = ceo_name.replace(ceo_kana, "")
         self.sheet.cell(row=index, column=6, value=ceo_name)
-        #add other list.
+        #住所処理系
+        address_data = soup.select_one('#input > div:nth-child(1) > table > tbody > tr:nth-child(4) > td').get_text()
+        post_obj = re.search('[0-9]{3}-[0-9]{4}', address_data)
+        post_num = post_obj.group()
+        self.sheet.cell(row=index, column=7, value=post_num)
+        comp_address_data = re.split('〒[0-9]{3}-[0-9]{4}', address_data)#住所のみの文字列へ変換
+        pref_obj = re.search('東京都|北海道|(?:京都|大阪)府|.{2,3}県', comp_address_data[1])
+        pref = pref_obj.group()
+        self.sheet.cell(row=index, column=8, value=self.call_jis_code(pref))
+        self.sheet.cell(row=index, column=9, value=pref)
+        muni = re.split('東京都|北海道|(?:京都|大阪)府|.{2,3}県', comp_address_data[1])#市区町村
+        self.sheet.cell(row=index, column=10, value=muni[1])
+        
+        tel = soup.select_one('#input > div:nth-child(1) > table > tbody > tr:nth-child(5) > td').get_text()
+        self.sheet.cell(row=index, column=11, value=tel)
+
+        com_class = soup.select_one('table.re_summ_2 > tbody > tr:nth-child(1) > td').get_text()
+        self.sheet.cell(row=index, column=12, value=com_class)
+        com_money = soup.select_one('table.re_summ_2 > tbody > tr.tdnum > td').get_text()
+        com_money = com_money.replace(",", "")
+        com_money = com_money.replace("千円", "")
+        com_money = int(com_money)
+        self.sheet.cell(row=index, column=13, value=com_money)
+        kengyou = soup.select_one('table.re_summ_2 > tbody > tr:nth-child(3) > td').get_text()
+        self.sheet.cell(row=index, column=14, value=kengyou)
+
+        #表処理系
+        perm_data = soup.select('table.re_summ_3 > tbody > tr.re_summ_odd > td')
+        for c in range(15, 33):
+            i = c - 15
+            perm_class = perm_data[i].get_text()
+            if perm_class != "":
+                self.sheet.cell(row=index, column=c, value="●")
+        
+        perm_period = soup.select_one('div.clr > div > table.re_summ_5 > tbody > tr > td').get_text()
+        self.sheet.cell(row=index, column=self.sheet.max_column, value=perm_period)
 
     def call_jis_code(self, key):
         pref_jiscode = {
-            "北海道": '01',
-            "青森県": '02',
-            "岩手県": '03',
-            "宮城県": '04',
-            "秋田県": '05',
-            "山形県": '06',
-            "福島県": '07',
-            "茨城県": '08',
-            "栃木県": '09',
+            "北海道": 1,
+            "青森県": 2,
+            "岩手県": 3,
+            "宮城県": 4,
+            "秋田県": 5,
+            "山形県": 6,
+            "福島県": 7,
+            "茨城県": 8,
+            "栃木県": 9,
             "群馬県": 10,
             "埼玉県": 11,
             "千葉県": 12,
@@ -197,7 +239,6 @@ class ScrapInfo(Scraping):
         dictionary = {
             
         }
-
 
 def main(path, area):
     scrap = Scraping()
