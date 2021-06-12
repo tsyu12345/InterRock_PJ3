@@ -1,5 +1,9 @@
+from os import terminal_size
+import threading
+from tkinter import font
 import PySimpleGUI as gui
-import scrap
+from scrap import Scraping
+import time
 import sys
 
 class AreaSelect:
@@ -8,6 +12,7 @@ class AreaSelect:
                 [gui.Text("都道府県",
                         key='pref_title', size=(60, None))],
                 [gui.InputText(key=('pref_name')), gui.Button('エリア選択')],
+                [gui.Checkbox('本店(本社のみの抽出。営業所の抽出無し。)', key = 'honten', font = (terminal_size, 11))]
             ]
         return L
 
@@ -47,9 +52,35 @@ class PathSelect:
             [gui.InputText(key='path'), gui.SaveAs("選択", file_types=( [('Excelファイル','*.xlsx')]))]
         ]
         return L
+    
+    
+class ProgressBar:
+    def __init__(self, length, text):
+        self.BAR_MAX = length
+        self.L = [
+            [gui.Text(text)],
+            [gui.ProgressBar(self.BAR_MAX, orientation='h', size=(20,20), key='-PROG-')],
+            [gui.Cancel()]
+        ]
+    
 
+class Job():
 
+    def __init__(self, path, areas, honten):
+        self.areas = areas
+        self.path = path
+        self.honten = honten
+        #threading.Thread.__init__(self)
+    
+    def run(self):
+        for pref in self.areas:
+            scrap = Scraping(self.path)
+            scrap.search(pref, self.honten)
+            scrap.scrap()
+        gui.popup('お疲れ様でした。抽出完了です。ファイルを確認してください。\n保存先：'+self.path)
+        return True
 
+            
 def obj_frame(lay_out_data):
     L = [
             [gui.Frame("抽出条件", lay_out_data[0])],
@@ -58,7 +89,59 @@ def obj_frame(lay_out_data):
         ]
     return L
 
-
+def call_jis_code(key):
+        pref_jiscode = {
+            "北海道": "01",
+            "青森県": "02",
+            "岩手県": "03",
+            "宮城県": "04",
+            "秋田県": "05",
+            "山形県": "06",
+            "福島県": "07",
+            "茨城県": "08",
+            "栃木県": "09",
+            "群馬県": 10,
+            "埼玉県": 11,
+            "千葉県": 12,
+            "東京都": 13,
+            "神奈川県": 14,
+            "新潟県": 15,
+            "富山県": 16,
+            "石川県": 17,
+            "福井県": 18,
+            "山梨県": 19,
+            "長野県": 20,
+            "岐阜県": 21,
+            "静岡県": 22,
+            "愛知県": 23,
+            "三重県": 24,
+            "滋賀県": 25,
+            "京都府": 26,
+            "大阪府": 27,
+            "兵庫県": 28,
+            "奈良県": 29,
+            "和歌山県": 30,
+            "鳥取県": 31,
+            "島根県": 32,
+            "岡山県": 33,
+            "広島県": 34,
+            "山口県": 35,
+            "徳島県": 36,
+            "香川県": 37,
+            "愛媛県": 38,
+            "高知県": 39,
+            "福岡県": 40,
+            "佐賀県": 41,
+            "長崎県": 42,
+            "熊本県": 43,
+            "大分県": 44,
+            "宮崎県": 45,
+            "鹿児島県": 46,
+            "沖縄県": 47
+        }
+        code = pref_jiscode[key]
+        print(code)
+        return str(code)
 
 def main():
     gui.theme('BluePurple')
@@ -73,11 +156,12 @@ def main():
     layout = obj_frame(lay_data)
     win = gui.Window('国土交通省 建設業許可 抽出ツール',
                      icon='69b54a27564218141a41104e1e345cff_xxo.ico', layout=layout)
-    while True:
+    comp_flg = False
+    while comp_flg == False:
         event, value = win.read()
         print(event)
         print(value)
-        if event in 'エリア選択':
+        if event == 'エリア選択':
             pref_list = area_obj.are_select()
             add = ""
             for i in range(len(pref_list)):
@@ -86,13 +170,18 @@ def main():
                 else:
                     add += pref_list[i] + ","
                 win['pref_name'].update(add)
-        if event in '抽出実行':
-            scrap.main(value['path'], pref_list)
+        
+        if event == '抽出実行':
+            for i, pref in enumerate(pref_list):
+                pref = call_jis_code(pref_list[i]) + " " + pref_list[i] #prefCode + " " + prefNameのフォーマットへ変換
+                pref_list[i] = pref
+            job = Job(value['path'], pref_list, value['honten'])
+            comp_flg = job.run()
         # when window close
         if event in ("Quit", None):
             break
     win.close()
     sys.exit()
 
-
-main()
+if __name__ == "__main__":
+    main()

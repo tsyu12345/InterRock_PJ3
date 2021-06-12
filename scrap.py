@@ -1,12 +1,12 @@
-from PySimpleGUI.PySimpleGUI import Quit
+from threading import Thread
+from PySimpleGUI.PySimpleGUI import Quit, Window
+from bs4.element import ResultSet
 import openpyxl as px 
-import requests as rq
-from requests import exceptions as RqExceptions
 import jeraconv.jeraconv
 import PySimpleGUI as gui
 import re 
-import threading
 import sys
+import os 
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException, WebDriverException
 from selenium.webdriver.support.select import Select
@@ -17,12 +17,14 @@ class Scraping:
     def __init__(self, path):
         #create new book
         self.path = path
-        new = px.Workbook()
-        new.save(self.path)
+        if os.path.isfile(self.path):
+            self.book = px.load_workbook(path)
+            self.sheet = self.book.worksheets[0]
+        else:
+            self.book = px.Workbook()
+            self.sheet = self.book.worksheets[0]
+            self.ready_book()
         #initialization
-        self.book = px.load_workbook(path)
-        self.sheet = self.book.worksheets[0]
-        self.ready_book()
         options = webdriver.ChromeOptions()
         options.add_argument("start-maximized")
         options.add_argument("enable-automation")
@@ -37,28 +39,40 @@ class Scraping:
         options.add_argument('--ignore-ssl-errors')
         prefs = {"profile.default_content_setting_values.notifications": 2}
         options.add_experimental_option("prefs", prefs)
+        self.resultcnt = 0
         self.driver = webdriver.Chrome(executable_path='./chromedriver.exe', options=options)
 
-    def search(self, area):
+    def search(self, area, honten):
+        self.area = area
         def select_choice(select_text, element_id):
             choice = self.driver.find_element_by_id(element_id)
             select = Select(choice)
             return select.select_by_visible_text(select_text)
 
         self.driver.get('https://etsuran.mlit.go.jp/TAKKEN/kensetuKensaku.do')
-        select_choice('本店', 'choice')
+        if honten:
+            select_choice('本店', 'choice')
+        else:
+            pass
         select_choice(area, 'kenCode')
         select_choice('50', 'dispCount')
         search_btn = self.driver.find_element_by_css_selector('#input > div:nth-child(6) > div:nth-child(5)')
         search_btn.click()
         
     def scrap(self):
+        self.resultcnt = self.driver.find_element_by_css_selector('#container_cont > div.result.clr > p').text
+        self.resultcnt = self.resultcnt.replace("検索結果：", "")
+        self.resultcnt = self.resultcnt.replace("件", "")
+        self.resultcnt = re.sub("\n\d+目～\d+目までを表示", "", self.resultcnt)
+        print(self.resultcnt)
+        self.resultcnt = int(self.resultcnt)
+        count = 1
         res_count = self.driver.find_element_by_id('pageListNo1')
-        print(res_count)
         select = Select(res_count)
         all_options = select.options
         loop_count = len(all_options)
-        index = self.sheet.max_row
+        index = self.sheet.max_row + 1
+
         for i in range(1, loop_count):
             for j in range(2, 52):
                 #InfoScrap here
@@ -70,12 +84,15 @@ class Scraping:
                 except AttributeError:
                     pass                        
                 self.driver.back()
-                index += 1     
+                index += 1
+                count += 1
+                gui.OneLineProgressMeter("処理中です...", count, self.resultcnt, 'prog', "ただいま" + self.area + "の抽出処理中です。" + "しばらくお待ちください。")
             next_btn = self.driver.find_element_by_css_selector('#container_cont > div.result.clr > div:nth-child(5) > img')
             next_btn.click()
         self.book.save(self.path)
         print("saved")
         print(self.sheet.max_row)
+        self.driver.quit()
 
     def ready_book(self):
         col_list = [
@@ -129,7 +146,6 @@ class Scraping:
         self.book.save(self.path)
 
     def extraction(self, html, index):
-        print(index)
         soup = bs(html, 'lxml')
         perm_day = soup.select_one("div.clr > div > div.scroll-pane > table.re_summ_4 > tbody > tr > td > a").get_text()
         perm_day = self.wareki_conv(perm_day)
@@ -191,7 +207,6 @@ class Scraping:
         day_array = day_data.split("/")
         day_array[0] += "年"
         year = j2w.convert(day_array[0])
-        print(year)
         day = str(year) + "/" + day_array[1] + "/" + day_array[2]
         return day
 
@@ -246,46 +261,26 @@ class Scraping:
             "沖縄県": 47
         }
         code = pref_jiscode[key]
-        print(code)
         return code
 
-class ProgressBar:
-    def __init__(self, length, text):
-        self.BAR_MAX = length
-        self.L = [
-            [gui.Text(text)],
-            [gui.ProgressBar(self.BAR_MAX, orientation='h', size=(20,20), key='-PROG-')],
-            [gui.Cancel()]
-        ]
-        
-def main2(scraping_obj, area):
-    scraping_obj.search(area)
-    scraping_obj.scrap()
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.dirname(__file__)
+    return os.path.join(base_path, relative_path)
 
-def main(path, areas):
-    scrap = Scraping(path)
-    prg_bar = ProgressBar(len(areas), "処理中です。しばらくお待ちください。")
-    window = gui.Window("抽出処理中です...", layout=prg_bar.L)
-    for i, area in enumerate(areas):
-        event, value = window.read(timeout=10)
-        if event == 'Cancel' or event == gui.WIN_CLOSED:
-            break
-        window['-PROG-'].update(i)
-        scrap.search(area)
-        scrap.scrap()
-    scrap.driver.quit()
-    gui.popup(title="お疲れ様です。抽出完了しました。ファイルを確認してください。\n保存先：" + path, keep_on_top=True)
-    window.close()
-    sys.exit()
+
+
 
 if __name__ == "__main__":
-    scrap = Scraping("./saga.xlsx")
-    main2(scrap, '41 佐賀県')
+    """
     scrap = Scraping("./Fukuoka.xlsx")
     main2(scrap, '40 福岡県')
     scrap = Scraping('./Hyogo.xlsx')
     main2(scrap, '28 兵庫県')
     #main("./Kanagawa.xlsx", "14 神奈川県")
+     """
     """
     main("datas/Hokaido.xlsx", "01 北海道")
     main("daats/Tokyo.xlsx", "13 東京都")
