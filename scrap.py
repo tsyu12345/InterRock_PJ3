@@ -5,7 +5,7 @@ from requests import exceptions as RqExceptions
 import jeraconv.jeraconv
 import PySimpleGUI as gui
 import re 
-import time
+import threading
 import sys
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException, WebDriverException
@@ -15,9 +15,14 @@ from bs4 import BeautifulSoup as bs
 class Scraping:
     
     def __init__(self, path):
+        #create new book
         self.path = path
-        self.book = px.Workbook()
+        new = px.Workbook()
+        new.save(self.path)
+        #initialization
+        self.book = px.load_workbook(path)
         self.sheet = self.book.worksheets[0]
+        self.ready_book()
         options = webdriver.ChromeOptions()
         options.add_argument("start-maximized")
         options.add_argument("enable-automation")
@@ -36,8 +41,8 @@ class Scraping:
 
     def search(self, area):
         def select_choice(select_text, element_id):
-            chroice = self.driver.find_element_by_id(element_id)
-            select = Select(chroice)
+            choice = self.driver.find_element_by_id(element_id)
+            select = Select(choice)
             return select.select_by_visible_text(select_text)
 
         self.driver.get('https://etsuran.mlit.go.jp/TAKKEN/kensetuKensaku.do')
@@ -48,13 +53,12 @@ class Scraping:
         search_btn.click()
         
     def scrap(self):
-        self.ready_book()
         res_count = self.driver.find_element_by_id('pageListNo1')
         print(res_count)
         select = Select(res_count)
         all_options = select.options
         loop_count = len(all_options)
-        index = 2
+        index = self.sheet.max_row
         for i in range(1, loop_count):
             for j in range(2, 52):
                 #InfoScrap here
@@ -64,13 +68,14 @@ class Scraping:
                 try:
                     self.extraction(html, index)
                 except AttributeError:
-                    pass
-                index += 1                        
-                self.driver.back()     
+                    pass                        
+                self.driver.back()
+                index += 1     
             next_btn = self.driver.find_element_by_css_selector('#container_cont > div.result.clr > div:nth-child(5) > img')
             next_btn.click()
-        self.driver.quit()
         self.book.save(self.path)
+        print("saved")
+        print(self.sheet.max_row)
 
     def ready_book(self):
         col_list = [
@@ -244,24 +249,44 @@ class Scraping:
         print(code)
         return code
 
-class ProglessBar:
-    def __init__(self, area_len):
-        self.BAR_MAX = area_len
+class ProgressBar:
+    def __init__(self, length, text):
+        self.BAR_MAX = length
         self.L = [
-            [gui.Text('抽出処理中')],
+            [gui.Text(text)],
             [gui.ProgressBar(self.BAR_MAX, orientation='h', size=(20,20), key='-PROG-')],
             [gui.Cancel()]
         ]
+        
+def main2(scraping_obj, area):
+    scraping_obj.search(area)
+    scraping_obj.scrap()
 
-def main(path, area):
+def main(path, areas):
     scrap = Scraping(path)
-    scrap.search(area)
-    scrap.scrap()
-    
+    prg_bar = ProgressBar(len(areas), "処理中です。しばらくお待ちください。")
+    window = gui.Window("抽出処理中です...", layout=prg_bar.L)
+    for i, area in enumerate(areas):
+        event, value = window.read(timeout=10)
+        if event == 'Cancel' or event == gui.WIN_CLOSED:
+            break
+        window['-PROG-'].update(i)
+        scrap.search(area)
+        scrap.scrap()
+    scrap.driver.quit()
+    gui.popup(title="お疲れ様です。抽出完了しました。ファイルを確認してください。\n保存先：" + path, keep_on_top=True)
+    window.close()
+    sys.exit()
 
 if __name__ == "__main__":
-
+    scrap = Scraping("./saga.xlsx")
+    main2(scrap, '41 佐賀県')
+    scrap = Scraping("./Fukuoka.xlsx")
+    main2(scrap, '40 福岡県')
+    scrap = Scraping('./Hyogo.xlsx')
+    main2(scrap, '28 兵庫県')
     #main("./Kanagawa.xlsx", "14 神奈川県")
+    """
     main("datas/Hokaido.xlsx", "01 北海道")
     main("daats/Tokyo.xlsx", "13 東京都")
     main("datas/Tiba.xlsx", "12 千葉県")
@@ -271,7 +296,7 @@ if __name__ == "__main__":
     main("datas/Hyogo.xlsx", "28 兵庫県")
     main("datas/Fucuoka.xlsx", "40 福岡県")
     main("datas/Saga.xlsx", "41 佐賀県")
-
+    """
 
     """
     task = [
