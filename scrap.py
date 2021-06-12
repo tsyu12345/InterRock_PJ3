@@ -13,10 +13,11 @@ from selenium.webdriver.support.select import Select
 from bs4 import BeautifulSoup as bs
 
 class Scraping:
-    book = px.Workbook()
-    sheet = book.worksheets[0]
-
-    def __init__(self):
+    
+    def __init__(self, path):
+        self.path = path
+        self.book = px.Workbook()
+        self.sheet = self.book.worksheets[0]
         options = webdriver.ChromeOptions()
         options.add_argument("start-maximized")
         options.add_argument("enable-automation")
@@ -46,11 +47,8 @@ class Scraping:
         search_btn = self.driver.find_element_by_css_selector('#input > div:nth-child(6) > div:nth-child(5)')
         search_btn.click()
         
-
-    def scrap(self, path):
-        info = ScrapInfo(path)
-        info.ready_book()        
-        time.sleep(2)
+    def scrap(self):
+        self.ready_book()
         res_count = self.driver.find_element_by_id('pageListNo1')
         print(res_count)
         select = Select(res_count)
@@ -64,7 +62,7 @@ class Scraping:
                 company.click()
                 html = self.driver.page_source
                 try:
-                    info.scrap(html, index)
+                    self.extraction(html, index)
                 except AttributeError:
                     pass
                 index += 1                        
@@ -72,11 +70,7 @@ class Scraping:
             next_btn = self.driver.find_element_by_css_selector('#container_cont > div.result.clr > div:nth-child(5) > img')
             next_btn.click()
         self.driver.quit()
-        self.book.save(path)
-
-class ScrapInfo(Scraping):
-    def __init__(self, path):
-        self.path = path
+        self.book.save(self.path)
 
     def ready_book(self):
         col_list = [
@@ -129,7 +123,7 @@ class ScrapInfo(Scraping):
         self.sheet.freeze_panes = "A2"
         self.book.save(self.path)
 
-    def scrap(self, html, index):
+    def extraction(self, html, index):
         print(index)
         soup = bs(html, 'lxml')
         perm_day = soup.select_one("div.clr > div > div.scroll-pane > table.re_summ_4 > tbody > tr > td > a").get_text()
@@ -258,36 +252,25 @@ class ProglessBar:
             [gui.ProgressBar(self.BAR_MAX, orientation='h', size=(20,20), key='-PROG-')],
             [gui.Cancel()]
         ]
-    
-    
 
-
-def main(path, areas):
-    prog_bar = ProglessBar(len(areas))
-    window = gui.Window('抽出処理中...', layout=prog_bar.L)
-    for i in range(len(areas)):
-        event, values = window.read(timeout=10)
-        scrap = Scraping()
-        window['-PROG-'].update(i)
-        #scrap.search(areas[i])
-        #scrap.scrap(path)
-        if event == 'Cancel' or event == gui.WIN_CLOSED:
-            break
-    window.close()
-    sys.exit
+def main(path, area):
+    scrap = Scraping(path)
+    scrap.search(area)
+    scrap.scrap()
+    
 
 if __name__ == "__main__":
 
-    main("./Kanagawa.xlsx", "14 神奈川県")
-    main("./Hokaido.xlsx", "01 北海道")
-    main("./Tokyo.xlsx", "13 東京都")
-    main("./Tiba.xlsx", "12 千葉県")
-    main("./Saitama.xlsx", "11 埼玉県")
-    main("./Osaka.xlsx", "27 大阪府")
-    main("./Kyoto.xlsx", "26 京都府")
-    main("./Hyogo.xlsx", "28 兵庫県")
-    main("./Fucuoka.xlsx", "40 福岡県")
-    main("./Saga.xlsx", "41 佐賀県")
+    #main("./Kanagawa.xlsx", "14 神奈川県")
+    main("datas/Hokaido.xlsx", "01 北海道")
+    main("daats/Tokyo.xlsx", "13 東京都")
+    main("datas/Tiba.xlsx", "12 千葉県")
+    main("datas/Saitama.xlsx", "11 埼玉県")
+    main("datas/Osaka.xlsx", "27 大阪府")
+    main("datas/Kyoto.xlsx", "26 京都府")
+    main("datas/Hyogo.xlsx", "28 兵庫県")
+    main("datas/Fucuoka.xlsx", "40 福岡県")
+    main("datas/Saga.xlsx", "41 佐賀県")
 
 
     """
