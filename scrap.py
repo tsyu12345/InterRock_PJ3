@@ -1,6 +1,3 @@
-from threading import Thread
-from PySimpleGUI.PySimpleGUI import Quit, Window
-from bs4.element import ResultSet
 import openpyxl as px 
 import jeraconv.jeraconv
 import PySimpleGUI as gui
