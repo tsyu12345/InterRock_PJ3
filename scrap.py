@@ -86,7 +86,7 @@ class Scraping:
                 self.driver.back()
                 index += 1
                 count += 1
-                gui.OneLineProgressMeter("処理中です...", count, self.resultcnt, 'prog', "ただいま" + self.area + "の抽出処理中です。" + "しばらくお待ちください。")
+                gui.OneLineProgressMeter("処理中です...", count, self.resultcnt, 'prog', "ただいま[" + self.area + "]の抽出処理中です。" + "しばらくお待ちください。")
             next_btn = self.driver.find_element_by_css_selector('#container_cont > div.result.clr > div:nth-child(5) > img')
             next_btn.click()
         self.book.save(self.path)
