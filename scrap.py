@@ -188,7 +188,7 @@ class Scraping:
 
         #表処理系
         perm_data = soup.select('#input > table:nth-child(6) > tbody > tr.re_summ_odd > td')
-        for c in range(15, 33):
+        for c in range(15, 43):
             i = c - 15
             perm_class = perm_data[i].get_text()
             if perm_class in ("1", "2") :
