@@ -36,8 +36,11 @@ class Scraping:
         options.add_argument('--ignore-ssl-errors')
         prefs = {"profile.default_content_setting_values.notifications": 2}
         options.add_experimental_option("prefs", prefs)
+        browser_path = resource_path('Win_x64_857997_chrome-win\chrome-win\chrome.exe')
+        options.binary_location = browser_path
         self.resultcnt = 0
-        self.driver = webdriver.Chrome(executable_path='./chromedriver.exe', options=options)
+        driver_path = resource_path('./chromedriver.exe')
+        self.driver = webdriver.Chrome(executable_path=driver_path, options=options)
 
     def search(self, area, honten):
         self.area = area
