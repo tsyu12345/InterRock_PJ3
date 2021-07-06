@@ -2,6 +2,7 @@ from os import terminal_size
 import threading
 from tkinter import font
 import PySimpleGUI as gui
+from PySimpleGUI.PySimpleGUI import popup_error
 from scrap import Scraping
 import time
 import sys
@@ -176,7 +177,11 @@ def main():
                 pref = call_jis_code(pref_list[i]) + " " + pref_list[i] #prefCode + " " + prefNameのフォーマットへ変換
                 pref_list[i] = pref
             job = Job(value['path'], pref_list, value['honten'])
-            comp_flg = job.run()
+            try:
+                comp_flg = job.run()
+            except:
+                gui,popup_error("Fatal Error Occured")
+                sys.exit()
         # when window close
         if event in ("Quit", None):
             break

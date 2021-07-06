@@ -81,7 +81,7 @@ class Scraping:
                 html = self.driver.page_source
                 try:
                     self.extraction(html, index)
-                except AttributeError:
+                except :
                     pass                        
                 self.driver.back()
                 index += 1
