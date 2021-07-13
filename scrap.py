@@ -1,3 +1,4 @@
+import threading
 import openpyxl as px 
 import jeraconv.jeraconv
 import PySimpleGUI as gui
@@ -8,6 +9,7 @@ from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException, WebDriverException
 from selenium.webdriver.support.select import Select
 from bs4 import BeautifulSoup as bs
+import threading
 
 class Scraping:
     
@@ -38,9 +40,10 @@ class Scraping:
         options.add_experimental_option("prefs", prefs)
         browser_path = resource_path('Win_x64_857997_chrome-win\chrome-win\chrome.exe')
         options.binary_location = browser_path
-        self.resultcnt = 0
+        self.resultcnt = 1
         driver_path = resource_path('./chromedriver.exe')
         self.driver = webdriver.Chrome(executable_path=driver_path, options=options)
+        self.count = 0
 
     def search(self, area, honten):
         self.area = area
@@ -66,13 +69,12 @@ class Scraping:
         self.resultcnt = re.sub("\n\d+目～\d+目までを表示", "", self.resultcnt)
         print(self.resultcnt)
         self.resultcnt = int(self.resultcnt)
-        count = 1
+        self.count = 1
         res_count = self.driver.find_element_by_id('pageListNo1')
         select = Select(res_count)
         all_options = select.options
         loop_count = len(all_options)
         index = self.sheet.max_row + 1
-
         for i in range(1, loop_count):
             for j in range(2, 52):
                 #InfoScrap here
@@ -85,8 +87,7 @@ class Scraping:
                     pass                        
                 self.driver.back()
                 index += 1
-                count += 1
-                gui.OneLineProgressMeter("処理中です...", count, self.resultcnt, 'prog', "ただいま[" + self.area + "]の抽出処理中です。" + "しばらくお待ちください。")
+                self.count += 1
             next_btn = self.driver.find_element_by_css_selector('#container_cont > div.result.clr > div:nth-child(5) > img')
             next_btn.click()
         self.book.save(self.path)
@@ -269,7 +270,6 @@ def resource_path(relative_path):
     except Exception:
         base_path = os.path.dirname(__file__)
     return os.path.join(base_path, relative_path)
-
 
 
 
