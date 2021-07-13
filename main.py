@@ -74,6 +74,10 @@ class Job():
             self.scrap.scrap()
         return True
 
+    def cancel(self):
+        self.scrap.book.save(self.path)
+        self.scrap.driver.quit()
+        
 
 def obj_frame(lay_out_data):
     L = [
@@ -142,8 +146,6 @@ def call_jis_code(key):
 def main():
     execuetr = TPE(max_workers=2)
     gui.theme('BluePurple')
-    width = 700
-    height = 300
     """
     layout Object here
     """
@@ -154,6 +156,7 @@ def main():
     win = gui.Window('国土交通省 建設業許可 抽出ツール',
                      icon='69b54a27564218141a41104e1e345cff_xxo.ico', layout=layout)
     comp_flg = False
+    detati = False
     running = False
     while comp_flg == False:
         event, value = win.read()
@@ -181,21 +184,32 @@ def main():
             while running:
                 try:
                     cancel = gui.OneLineProgressMeter(
-                        "処理中です...", job.scrap.count, job.scrap.resultcnt, "現在抽出処理中です...。これには数時間かかることがあります。\nコンピュータの電源を切らないでください。")
+                        "処理中です...", job.scrap.count, job.scrap.resultcnt, 'prog', "現在抽出処理中です...。これには数時間かかることがあります。\nコンピュータの電源を切らないでください。")
                 except TypeError:
-                    cancel = gui.OneLineProgressMeter("処理中です...", 0, 1, "ただいま抽出準備中です...。")
+                    cancel = gui.OneLineProgressMeter("処理中です...", 0, 1, 'prog', "ただいま抽出準備中です...。")
                     pass
-                if cancel in ('Cancelled', None):
+                
+                if cancel == False:
                     running = False
+                    detati = True
 
                 if event in ("Quit", None):
                     running = False
                 
-                if job.scrap.count == job.scrap.resultcnt:
+                if job.scrap.end_flg:
                     running = False
                     comp_flg = True
 
+        if detati:
+            try:
+                job.cancel()
+                execuetr.shutdown(wait=True)
+                gui.popup("処理を中断しました。途中保存ファイル先は下記です。\n保存先："+value['path'])
+            except TypeError:
+                pass
+
         if comp_flg:
+            execuetr.shutdown(wait=True)
             gui.popup('お疲れ様でした。抽出完了です。ファイルを確認してください。\n保存先：'+value['path'])
             break
 
@@ -203,7 +217,6 @@ def main():
             break
 
     win.close()
-    execuetr.shutdown()
     sys.exit()
 
 

@@ -44,6 +44,7 @@ class Scraping:
         driver_path = resource_path('./chromedriver.exe')
         self.driver = webdriver.Chrome(executable_path=driver_path, options=options)
         self.count = 0
+        self.end_flg = False
 
     def search(self, area, honten):
         self.area = area
@@ -94,6 +95,7 @@ class Scraping:
         print("saved")
         print(self.sheet.max_row)
         self.driver.quit()
+        self.end_flg = True
 
     def ready_book(self):
         col_list = [
