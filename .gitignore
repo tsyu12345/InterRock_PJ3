@@ -8,3 +8,7 @@ chromedriver.exe
 drive-download-20210613T154108Z-001.zip
 drive-download-20210613T154127Z-001.zip
 __pycache__
+*.xlsx
+*.spec
+*.png
+*.ico
