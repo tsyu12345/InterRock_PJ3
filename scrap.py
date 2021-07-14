@@ -38,10 +38,10 @@ class Scraping:
         options.add_argument('--ignore-ssl-errors')
         prefs = {"profile.default_content_setting_values.notifications": 2}
         options.add_experimental_option("prefs", prefs)
-        browser_path = resource_path('Win_x64_857997_chrome-win/chrome-win/chrome.exe')
+        browser_path = resource_path('chrome-win/chrome.exe')
         options.binary_location = browser_path
         self.resultcnt = 1
-        driver_path = resource_path('./chromedriver/chromedriver.exe')
+        driver_path = resource_path('chromedriver_win32/chromedriver.exe')
         self.driver = webdriver.Chrome(executable_path=driver_path, options=options)
         self.count = 0
         self.end_flg = False

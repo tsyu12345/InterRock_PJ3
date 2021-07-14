@@ -203,14 +203,14 @@ def main():
         if detati:
             try:
                 job.cancel()
-                execuetr.shutdown(wait=True)
+                execuetr.shutdown(wait=False)
                 gui.popup("処理を中断しました。途中保存ファイル先は下記です。\n保存先："+value['path'])
-                win['pref_name'].update(None)
+                break
             except TypeError:
                 pass
 
         if comp_flg:
-            execuetr.shutdown(wait=True)
+            execuetr.shutdown(wait=False)
             gui.popup('お疲れ様でした。抽出完了です。ファイルを確認してください。\n保存先：'+value['path'])
             break
 
