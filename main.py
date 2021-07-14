@@ -205,6 +205,7 @@ def main():
                 job.cancel()
                 execuetr.shutdown(wait=True)
                 gui.popup("処理を中断しました。途中保存ファイル先は下記です。\n保存先："+value['path'])
+                win['pref_name'].update(None)
             except TypeError:
                 pass
 
