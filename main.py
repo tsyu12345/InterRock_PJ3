@@ -2,7 +2,7 @@ from os import terminal_size
 from concurrent.futures import ThreadPoolExecutor as TPE
 from tkinter import font
 import PySimpleGUI as gui
-from PySimpleGUI.PySimpleGUI import popup_error
+from PySimpleGUI.PySimpleGUI import Tree, popup_error
 from scrap import Scraping
 import time
 import sys
@@ -65,6 +65,7 @@ class Job():
         self.areas = areas
         self.path = path
         self.honten = honten
+        self.end_flg = False
         self.scrap = Scraping(self.path)
         # threading.Thread.__init__(self)
 
@@ -72,7 +73,7 @@ class Job():
         for pref in self.areas:
             self.scrap.search(pref, self.honten)
             self.scrap.scrap()
-        return True
+        self.end_flg = True
 
     def cancel(self):
         self.scrap.book.save(self.path)
@@ -184,27 +185,27 @@ def main():
             while running:
                 try:
                     cancel = gui.OneLineProgressMeter(
-                        "処理中です...", job.scrap.count, job.scrap.resultcnt, 'prog', "現在抽出処理中です...。これには数時間かかることがあります。\nコンピュータの電源を切らないでください。")
+                        "処理中です...", job.scrap.count, job.scrap.resultcnt, 'prog', "現在抽出処理中です...。これには数時間かかることがあります。\nコンピュータの電源を切らないでください。", orientation='h')
                 except TypeError:
                     cancel = gui.OneLineProgressMeter("処理中です...", 0, 1, 'prog', "ただいま抽出準備中です...。")
                     pass
                 
-                if cancel == False:
+                if cancel == False and job.end_flg == False:#プログレスバーが閉じかつ、終了フラグない時
                     running = False
                     detati = True
 
                 if event in ("Quit", None):
                     running = False
                 
-                if job.scrap.end_flg:
+                if job.end_flg:
                     running = False
                     comp_flg = True
 
         if detati:
             try:
+                gui.popup("処理を中断しました。途中保存ファイル先は下記です。\n保存先："+value['path'])
                 job.cancel()
                 execuetr.shutdown(wait=False)
-                gui.popup("処理を中断しました。途中保存ファイル先は下記です。\n保存先："+value['path'])
                 break
             except TypeError:
                 pass

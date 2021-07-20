@@ -95,7 +95,7 @@ class Scraping:
         print("saved")
         print(self.sheet.max_row)
         self.driver.quit()
-        self.end_flg = True
+       
 
     def ready_book(self):
         col_list = [
