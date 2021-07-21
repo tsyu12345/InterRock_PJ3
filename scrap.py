@@ -46,19 +46,21 @@ class Scraping:
         self.options.binary_location = browser_path
         self.resultcnt = 1
         self.driver_path = resource_path('chromedriver_win32/chromedriver.exe')
-        self.driver = webdriver.Chrome(executable_path=self.driver_path, options=self.options)
-        self.driver.set_window_size('1200', '1000')
+        #self.driver = webdriver.Chrome(executable_path=self.driver_path, options=self.options)
+        #self.driver.set_window_size('1200', '1000')
         self.count = 0
         self.end_flg = False
 
     def search(self, area, honten):
-        self.area = area
-        self.honten = honten
         def select_choice(select_text, element_id):
             choice = self.driver.find_element_by_id(element_id)
             select = Select(choice)
             return select.select_by_visible_text(select_text)
 
+        self.driver = webdriver.Chrome(executable_path=self.driver_path, options=self.options)
+        self.driver.set_window_size('1200', '1000')
+        self.area = area
+        self.honten = honten
         self.driver.get('https://etsuran.mlit.go.jp/TAKKEN/kensetuKensaku.do')
         if honten:
             select_choice('本店', 'choice')
@@ -74,8 +76,6 @@ class Scraping:
         self.book.save(self.path)
         self.driver.quit()
         time.sleep(5)
-        self.driver = webdriver.Chrome(executable_path=self.driver_path, options=self.options)
-        self.driver.set_window_size('1200', '1000')
         self.search(self.area, self.honten)
 
     def scrap(self):
@@ -97,8 +97,6 @@ class Scraping:
                 menu = self.driver.find_element_by_css_selector('#pageListNo1')
                 select = Select(menu)
                 select.select_by_value(str(i))
-
-
             for j in range(2, 52):
                 #InfoScrap here
                 company = self.driver.find_element_by_css_selector('#container_cont > table > tbody > tr:nth-child(' + str(j) +  ') > td:nth-child(4) > a')
