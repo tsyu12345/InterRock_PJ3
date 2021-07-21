@@ -1,6 +1,6 @@
 from os import terminal_size
-from concurrent.futures import ThreadPoolExecutor as TPE
-from tkinter import font
+#from concurrent.futures import ThreadPoolExecutor as TPE
+import threading as th
 import PySimpleGUI as gui
 from PySimpleGUI.PySimpleGUI import Tree, popup_error
 from scrap import Scraping
@@ -145,7 +145,7 @@ def call_jis_code(key):
 
 
 def main():
-    execuetr = TPE(max_workers=2)
+    #execuetr = TPE(max_workers=2)
     gui.theme('BluePurple')
     """
     layout Object here
@@ -180,7 +180,9 @@ def main():
                 pref_list[i] = pref
             job = Job(value['path'], pref_list, value['honten'])
             # try:
-            future = execuetr.submit(job.run,)
+            #future = execuetr.submit(job.run,)
+            th1 = th.Thread(target=job.run, daemon=True)
+            th1.start()
             running = True
             while running:
                 try:
@@ -205,13 +207,11 @@ def main():
             try:
                 gui.popup("処理を中断しました。途中保存ファイル先は下記です。\n保存先："+value['path'])
                 job.cancel()
-                execuetr.shutdown(wait=False)
                 break
             except TypeError:
                 pass
 
         if comp_flg:
-            execuetr.shutdown(wait=False)
             gui.popup('お疲れ様でした。抽出完了です。ファイルを確認してください。\n保存先：'+value['path'])
             break
 

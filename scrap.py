@@ -10,6 +10,7 @@ from selenium.common.exceptions import NoSuchElementException, WebDriverExceptio
 from selenium.webdriver.support.select import Select
 from bs4 import BeautifulSoup as bs
 import threading
+import time
 
 class Scraping:
     
@@ -24,30 +25,35 @@ class Scraping:
             self.sheet = self.book.worksheets[0]
             self.ready_book()
         #initialization
-        options = webdriver.ChromeOptions()
-        options.add_argument("start-maximized")
-        options.add_argument("enable-automation")
-        #options.add_argument("--headless")
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-infobars")
-        options.add_argument('--disable-extensions')
-        options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--disable-browser-side-navigation")
-        options.add_argument("--disable-gpu")
-        options.add_argument('--ignore-certificate-errors')
-        options.add_argument('--ignore-ssl-errors')
+        self.options = webdriver.ChromeOptions()
+        self.options.add_argument("start-maximized")
+        self.options.add_argument("enable-automation")
+        #self.options.add_argument("--headless")
+        self.options.add_argument('--lang=ja-JP')
+        self.options.add_argument("--no-sandbox")
+        self.options.add_argument("--proxy-server='direct://'")
+        self.options.add_argument("--proxy-bypass-list=*")
+        self.options.add_argument("--disable-infobars")
+        self.options.add_argument('--disable-extensions')
+        self.options.add_argument("--disable-dev-shm-usage")
+        self.options.add_argument("--disable-browser-side-navigation")
+        self.options.add_argument("--disable-gpu")
+        self.options.add_argument('--ignore-certificate-errors')
+        self.options.add_argument('--ignore-ssl-errors')
         prefs = {"profile.default_content_setting_values.notifications": 2}
-        options.add_experimental_option("prefs", prefs)
+        self.options.add_experimental_option("prefs", prefs)
         browser_path = resource_path('chrome-win/chrome.exe')
-        options.binary_location = browser_path
+        self.options.binary_location = browser_path
         self.resultcnt = 1
-        driver_path = resource_path('chromedriver_win32/chromedriver.exe')
-        self.driver = webdriver.Chrome(executable_path=driver_path, options=options)
+        self.driver_path = resource_path('chromedriver_win32/chromedriver.exe')
+        self.driver = webdriver.Chrome(executable_path=self.driver_path, options=self.options)
+        self.driver.set_window_size('1200', '1000')
         self.count = 0
         self.end_flg = False
 
     def search(self, area, honten):
         self.area = area
+        self.honten = honten
         def select_choice(select_text, element_id):
             choice = self.driver.find_element_by_id(element_id)
             select = Select(choice)
@@ -62,7 +68,16 @@ class Scraping:
         select_choice('50', 'dispCount')
         search_btn = self.driver.find_element_by_css_selector('#input > div:nth-child(6) > div:nth-child(5)')
         search_btn.click()
-        
+        time.sleep(5)
+    
+    def restart(self):
+        self.book.save(self.path)
+        self.driver.quit()
+        time.sleep(5)
+        self.driver = webdriver.Chrome(executable_path=self.driver_path, options=self.options)
+        self.driver.set_window_size('1200', '1000')
+        self.search(self.area, self.honten)
+
     def scrap(self):
         self.resultcnt = self.driver.find_element_by_css_selector('#container_cont > div.result.clr > p').text
         self.resultcnt = self.resultcnt.replace("検索結果：", "")
@@ -77,6 +92,13 @@ class Scraping:
         loop_count = len(all_options)
         index = self.sheet.max_row + 1
         for i in range(1, loop_count):
+            if i % 100 == 0:
+                self.restart()
+                menu = self.driver.find_element_by_css_selector('#pageListNo1')
+                select = Select(menu)
+                select.select_by_value(str(i))
+
+
             for j in range(2, 52):
                 #InfoScrap here
                 company = self.driver.find_element_by_css_selector('#container_cont > table > tbody > tr:nth-child(' + str(j) +  ') > td:nth-child(4) > a')
