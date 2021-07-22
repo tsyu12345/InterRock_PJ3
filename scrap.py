@@ -110,7 +110,7 @@ class Scraping:
                     pass
                 else:
                     html = self.driver.page_source
-                    try:
+                    try:#!!!!!!!!!!!!!!!!
                         self.extraction(html, index)
                         self.driver.back()
                     except:
