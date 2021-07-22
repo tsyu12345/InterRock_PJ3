@@ -1,15 +1,14 @@
-import threading
 import openpyxl as px 
 import jeraconv.jeraconv
-import PySimpleGUI as gui
 import re 
 import sys
 import os 
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException, WebDriverException
+from selenium.common.exceptions import ElementNotInteractableException, NoSuchElementException, WebDriverException
 from selenium.webdriver.support.select import Select
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup as bs
-import threading
 import time
 
 class Scraping:
@@ -56,12 +55,14 @@ class Scraping:
             choice = self.driver.find_element_by_id(element_id)
             select = Select(choice)
             return select.select_by_visible_text(select_text)
-
+        
         self.driver = webdriver.Chrome(executable_path=self.driver_path, options=self.options)
         self.driver.set_window_size('1200', '1000')
+        wait = WebDriverWait(self.driver, 20)
         self.area = area
         self.honten = honten
         self.driver.get('https://etsuran.mlit.go.jp/TAKKEN/kensetuKensaku.do')
+        wait.until(EC.visibility_of_all_elements_located)
         if honten:
             select_choice('本店', 'choice')
         else:
@@ -70,7 +71,7 @@ class Scraping:
         select_choice('50', 'dispCount')
         search_btn = self.driver.find_element_by_css_selector('#input > div:nth-child(6) > div:nth-child(5)')
         search_btn.click()
-        time.sleep(5)
+        
     
     def restart(self):
         self.book.save(self.path)
@@ -79,6 +80,8 @@ class Scraping:
         self.search(self.area, self.honten)
 
     def scrap(self):
+        wait = WebDriverWait(self.driver, 20)
+        wait.until(EC.visibility_of_all_elements_located)
         self.resultcnt = self.driver.find_element_by_css_selector('#container_cont > div.result.clr > p').text
         self.resultcnt = self.resultcnt.replace("検索結果：", "")
         self.resultcnt = self.resultcnt.replace("件", "")
@@ -99,14 +102,19 @@ class Scraping:
                 select.select_by_value(str(i))
             for j in range(2, 52):
                 #InfoScrap here
-                company = self.driver.find_element_by_css_selector('#container_cont > table > tbody > tr:nth-child(' + str(j) +  ') > td:nth-child(4) > a')
-                company.click()
-                html = self.driver.page_source
                 try:
-                    self.extraction(html, index)
-                except :
-                    pass                        
-                self.driver.back()
+                    wait.until(EC.visibility_of_all_elements_located)
+                    company = self.driver.find_element_by_css_selector('#container_cont > table > tbody > tr:nth-child(' + str(j) +  ') > td:nth-child(4) > a')
+                    company.click()
+                except ElementNotInteractableException:
+                    pass
+                else:
+                    html = self.driver.page_source
+                    try:
+                        self.extraction(html, index)
+                        self.driver.back()
+                    except:
+                        pass                        
                 index += 1
                 self.count += 1
             next_btn = self.driver.find_element_by_css_selector('#container_cont > div.result.clr > div:nth-child(5) > img')
