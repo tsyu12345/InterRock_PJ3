@@ -95,7 +95,7 @@ class Scraping:
         loop_count = len(all_options)
         index = self.sheet.max_row + 1
         for i in range(1, loop_count):
-            if i % 100 == 0:
+            if i % 10 == 0:
                 self.restart()
                 menu = self.driver.find_element_by_css_selector('#pageListNo1')
                 select = Select(menu)
@@ -106,7 +106,7 @@ class Scraping:
                     wait.until(EC.visibility_of_all_elements_located)
                     company = self.driver.find_element_by_css_selector('#container_cont > table > tbody > tr:nth-child(' + str(j) +  ') > td:nth-child(4) > a')
                     company.click()
-                except ElementNotInteractableException:
+                except (ElementNotInteractableException, NoSuchElementException):
                     pass
                 else:
                     html = self.driver.page_source

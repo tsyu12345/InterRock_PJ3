@@ -2,8 +2,9 @@ from os import terminal_size
 #from concurrent.futures import ThreadPoolExecutor as TPE
 import threading as th
 import PySimpleGUI as gui
-from PySimpleGUI.PySimpleGUI import Tree, popup_error
 from scrap import Scraping
+from selenium.common.exceptions import ElementNotInteractableException, NoSuchElementException, WebDriverException
+
 import time
 import sys
 
@@ -189,16 +190,17 @@ def main():
                     cancel = gui.OneLineProgressMeter(
                         "処理中です...", job.scrap.count, job.scrap.resultcnt, 'prog', "現在抽出処理中です...。これには数時間かかることがあります。\nコンピュータの電源を切らないでください。", orientation='h')
                 except (TypeError, RuntimeError):
-                    cancel = gui.OneLineProgressMeter("処理中です...", 0, 1, 'prog', "ただいま抽出準備中です...。")
+                    cancel = gui.OneLineProgressMeter(
+                        "処理中です...", 0, 1, 'prog', "ただいま抽出準備中です...。")
                     pass
-                
-                if cancel == False and job.end_flg == False:#プログレスバーが閉じかつ、終了フラグない時
+
+                if cancel == False and job.end_flg == False:  # プログレスバーが閉じかつ、終了フラグない時
                     running = False
                     detati = True
 
                 if event in ("Quit", None):
                     running = False
-                
+
                 if job.end_flg:
                     running = False
                     comp_flg = True
