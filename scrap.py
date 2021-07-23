@@ -110,11 +110,11 @@ class Scraping:
                     pass
                 else:
                     html = self.driver.page_source
-                    try:#!!!!!!!!!!!!!!!!
+                    try:#!!!!!!!!!!!!!
                         self.extraction(html, index)
-                        self.driver.back()
                     except:
-                        pass                        
+                        pass
+                self.driver.back()                        
                 index += 1
                 self.count += 1
             next_btn = self.driver.find_element_by_css_selector('#container_cont > div.result.clr > div:nth-child(5) > img')
