@@ -117,6 +117,7 @@ class Scraping:
                 self.driver.back()                        
                 index += 1
                 self.count += 1
+            wait.until(EC.visibility_of_all_elements_located)
             next_btn = self.driver.find_element_by_css_selector('#container_cont > div.result.clr > div:nth-child(5) > img')
             next_btn.click()
         self.book.save(self.path)
