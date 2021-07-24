@@ -8,6 +8,7 @@ from selenium.common.exceptions import ElementNotInteractableException, NoSuchEl
 from selenium.webdriver.support.select import Select
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup as bs
 import time
 
@@ -109,15 +110,16 @@ class Scraping:
                 except (ElementNotInteractableException, NoSuchElementException):
                     pass
                 else:
+                    wait.until(EC.visibility_of_all_elements_located)
                     html = self.driver.page_source
-                    try:#!!!!!!!!!!!!!
+                    try:
                         self.extraction(html, index)
                     except:
                         pass
-                self.driver.back()                        
+                    self.driver.back()                        
                 index += 1
                 self.count += 1
-            wait.until(EC.visibility_of_all_elements_located)
+            wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, "#container_cont > div.result.clr > div:nth-child(5) > img")))
             next_btn = self.driver.find_element_by_css_selector('#container_cont > div.result.clr > div:nth-child(5) > img')
             next_btn.click()
         self.book.save(self.path)
