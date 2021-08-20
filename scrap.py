@@ -77,7 +77,7 @@ class Scraping:
     def restart(self):
         self.book.save(self.path)
         self.driver.quit()
-        time.sleep(5)
+        time.sleep(10)
         self.search(self.area, self.honten)
 
     def scrap(self):
@@ -102,6 +102,11 @@ class Scraping:
                 select = Select(menu)
                 select.select_by_value(str(i))
             for j in range(2, 52):
+                try:
+                    sys_down = self.driver.find_element_by_id('Red')
+                    self.restart()
+                except NoSuchElementException:
+                    pass
                 #InfoScrap here
                 try:
                     wait.until(EC.visibility_of_all_elements_located)
