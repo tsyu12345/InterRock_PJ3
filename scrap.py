@@ -102,16 +102,21 @@ class Scraping:
                 select = Select(menu)
                 select.select_by_value(str(i))
             for j in range(2, 52):
-                try:
+                try:#接続エラー発生時：restart->現在のi番目のリストからやり直し。
                     sys_down = self.driver.find_element_by_id('Red')
                     self.restart()
+                    menu = self.driver.find_element_by_css_selector('#pageListNo1')
+                    select = Select(menu)
+                    select.select_by_value(str(i))
                 except NoSuchElementException:
                     pass
                 #InfoScrap here
                 try:
                     wait.until(EC.visibility_of_all_elements_located)
                     company = self.driver.find_element_by_css_selector('#container_cont > table > tbody > tr:nth-child(' + str(j) +  ') > td:nth-child(4) > a')
-                    company.click()
+                    #ElementClickInterceptException対策(画面外要素クリック対策)
+                    self.driver.execute_script('arguments[0].click();', company)
+                    #company.click()
                 except (ElementNotInteractableException, NoSuchElementException):
                     pass
                 else:
