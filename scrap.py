@@ -64,18 +64,23 @@ class Scraping:
         self.honten = honten
         self.driver.get('https://etsuran.mlit.go.jp/TAKKEN/kensetuKensaku.do')
         wait.until(EC.visibility_of_all_elements_located)
-        if honten:
-            select_choice('本店', 'choice')
-        else:
-            pass
-        select_choice(area, 'kenCode')
-        select_choice('50', 'dispCount')
-        search_btn = self.driver.find_element_by_css_selector('#input > div:nth-child(6) > div:nth-child(5)')
-        search_btn.click()
+        try:#接続エラー発生時：初回検索操作時およびrestart()➞ページ表示時
+            sys_down = self.driver.find_element_by_id('Red')#接続エラーの要素をキャッチ
+            self.restart()
+        except NoSuchElementException:#要素をキャッチ出来なければなにもせず通常処理へ
+            if honten:
+                select_choice('本店', 'choice') 
+            else:
+                pass
+            select_choice(area, 'kenCode')
+            select_choice('50', 'dispCount')
+            search_btn = self.driver.find_element_by_css_selector('#input > div:nth-child(6) > div:nth-child(5)')
+            search_btn.click()
         
     
     def restart(self):
         self.book.save(self.path)
+        self.driver.delete_all_cookies()
         self.driver.quit()
         time.sleep(10)
         self.search(self.area, self.honten)
@@ -96,13 +101,21 @@ class Scraping:
         loop_count = len(all_options)
         index = self.sheet.max_row + 1
         for i in range(1, loop_count):
-            if i % 10 == 0:
+            try:#接続エラー発生時：restart->現在のi番目のリストからやり直し。ページ遷移時
+                    sys_down = self.driver.find_element_by_id('Red')
+                    self.restart()
+                    menu = self.driver.find_element_by_css_selector('#pageListNo1')
+                    select = Select(menu)
+                    select.select_by_value(str(i))
+            except NoSuchElementException:
+                pass
+            if i % 10 == 0:#10ページに1回ブラウザを再起動しメモリをクリア。
                 self.restart()
                 menu = self.driver.find_element_by_css_selector('#pageListNo1')
                 select = Select(menu)
                 select.select_by_value(str(i))
             for j in range(2, 52):
-                try:#接続エラー発生時：restart->現在のi番目のリストからやり直し。
+                try:#接続エラー発生時：restart->現在のi番目のリストからやり直し。会社選択時
                     sys_down = self.driver.find_element_by_id('Red')
                     self.restart()
                     menu = self.driver.find_element_by_css_selector('#pageListNo1')
@@ -110,6 +123,7 @@ class Scraping:
                     select.select_by_value(str(i))
                 except NoSuchElementException:
                     pass
+                
                 #InfoScrap here
                 try:
                     wait.until(EC.visibility_of_all_elements_located)
@@ -120,6 +134,18 @@ class Scraping:
                 except (ElementNotInteractableException, NoSuchElementException):
                     pass
                 else:
+                    try:#接続エラー発生時：restart->現在のi番目のリストからやり直し。選択➞情報抽出時
+                        sys_down = self.driver.find_element_by_id('Red')
+                        self.restart()
+                        menu = self.driver.find_element_by_css_selector('#pageListNo1')
+                        select = Select(menu)
+                        select.select_by_value(str(i))
+                        wait.until(EC.visibility_of_all_elements_located)
+                        company = self.driver.find_element_by_css_selector('#container_cont > table > tbody > tr:nth-child(' + str(j) +  ') > td:nth-child(4) > a')
+                        #ElementClickInterceptException対策(画面外要素クリック対策)
+                        self.driver.execute_script('arguments[0].click();', company)
+                    except NoSuchElementException:
+                        pass
                     wait.until(EC.visibility_of_all_elements_located)
                     html = self.driver.page_source
                     try:

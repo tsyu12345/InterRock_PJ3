@@ -187,7 +187,13 @@ def main():
             running = True
             while running:
                 try:
-                    cancel = gui.OneLineProgressMeter("処理中です...", job.scrap.count, job.scrap.resultcnt, 'prog', "現在抽出処理中です...。これには数時間かかることがあります。\nコンピュータの電源を切らないでください。", orientation='h')
+                    cancel = gui.OneLineProgressMeter(
+                        "処理中です...", 
+                        job.scrap.count, 
+                        job.scrap.resultcnt, 
+                        'prog', 
+                        "現在抽出処理中です...。これには数時間かかることがあります。\nコンピュータの電源を切らないでください。", 
+                        orientation='h')
                 except (TypeError, RuntimeError):
                     cancel = gui.OneLineProgressMeter(
                         "処理中です...", 0, 1, 'prog', "ただいま抽出準備中です...。")
