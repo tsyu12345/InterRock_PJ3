@@ -219,9 +219,12 @@ class Scraping:
 
     def extraction(self, html, index):
         soup = bs(html, 'lxml')
+        print(html)
         perm_day = soup.select_one("div.clr > div > div.scroll-pane > table.re_summ_4 > tbody > tr > td > a").get_text()
         perm_day = self.wareki_conv(perm_day)
         self.sheet.cell(row=index, column=1, value=perm_day)
+        print(index, end=" ")
+        print(self.sheet.cell(row=index, column=1).value)
         perm_num_str = soup.select_one("#input > div.clr > table > tbody > tr > td").get_text()
         perm_num = perm_num_str.split("　")[1]
         self.sheet.cell(row=index, column=2, value=perm_num)
