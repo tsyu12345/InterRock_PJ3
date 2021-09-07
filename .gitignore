@@ -4,7 +4,7 @@ dist
 drive-download-20210613T154108Z-001
 drive-download-20210613T154127Z-001
 Win_x64_857997_chrome-win
-chromedriver.exe
+chromedriver_win32
 drive-download-20210613T154108Z-001.zip
 drive-download-20210613T154127Z-001.zip
 __pycache__
@@ -14,5 +14,5 @@ __pycache__
 *.ico
 test.py
 chrome-win
-
+*html
 product
