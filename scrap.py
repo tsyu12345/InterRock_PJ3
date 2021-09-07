@@ -150,7 +150,8 @@ class Scraping:
                     html = self.driver.page_source
                     try:
                         self.extraction(html, index)
-                    except:
+                        print(self.sheet.max_row)
+                    except (NoSuchElementException, ElementNotInteractableException):
                         pass
                     self.driver.back()                        
                 index += 1
@@ -219,12 +220,12 @@ class Scraping:
 
     def extraction(self, html, index):
         soup = bs(html, 'lxml')
-        print(html)
+        #print(html)
         perm_day = soup.select_one("div.clr > div > div.scroll-pane > table.re_summ_4 > tbody > tr > td > a").get_text()
         perm_day = self.wareki_conv(perm_day)
         self.sheet.cell(row=index, column=1, value=perm_day)
-        print(index, end=" ")
-        print(self.sheet.cell(row=index, column=1).value)
+        #print(index, end=" ")
+        #print(self.sheet.cell(row=index, column=1).value)
         perm_num_str = soup.select_one("#input > div.clr > table > tbody > tr > td").get_text()
         perm_num = perm_num_str.split("　")[1]
         self.sheet.cell(row=index, column=2, value=perm_num)
@@ -348,13 +349,10 @@ def resource_path(relative_path):
 
 
 if __name__ == "__main__":
-    """
-    scrap = Scraping("./Fukuoka.xlsx")
-    main2(scrap, '40 福岡県')
-    scrap = Scraping('./Hyogo.xlsx')
-    main2(scrap, '28 兵庫県')
-    #main("./Kanagawa.xlsx", "14 神奈川県")
-     """
+
+    scrap = Scraping('./test.xlsx')
+    scrap.search('14 神奈川県',True)
+    scrap.scrap()
     """
     main("datas/Hokaido.xlsx", "01 北海道")
     main("daats/Tokyo.xlsx", "13 東京都")
