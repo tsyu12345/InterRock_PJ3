@@ -156,7 +156,7 @@ def main():
     lay_data = [area_obj.lay_out(), path_obj.lay_out()]
     layout = obj_frame(lay_data)
     win = gui.Window('国土交通省 建設業許可 抽出ツール',
-                     icon='69b54a27564218141a41104e1e345cff_xxo.ico', layout=layout)
+                     icon='7c6c422c852fa03da8f3198e7c9cf243_xxo.ico', layout=layout)
     comp_flg = False
     detati = False
     running = False
