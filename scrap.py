@@ -151,7 +151,7 @@ class Scraping:
                     try:
                         self.extraction(html, index)
                         print(self.sheet.max_row)
-                    except (NoSuchElementException, ElementNotInteractableException):
+                    except:#抽出処理時のみ全例外をスルー
                         pass
                     self.driver.back()                        
                 index += 1

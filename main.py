@@ -187,12 +187,15 @@ def main():
             running = True
             while running:
                 try:
+                    cur_count = job.scrap.count
+                    if cur_count >= job.scrap.resultcnt:
+                        cur_count = job.scrap.resultcnt-1
                     cancel = gui.OneLineProgressMeter(
-                        "処理中です...", 
-                        job.scrap.count, 
+                        "処理中",
+                        cur_count, 
                         job.scrap.resultcnt, 
                         'prog', 
-                        "現在抽出処理中です...。これには数時間かかることがあります。\nコンピュータの電源を切らないでください。", 
+                        "現在抽出処理中です。\nこれには数時間かかります。", 
                         orientation='h')
                 except (TypeError, RuntimeError):
                     cancel = gui.OneLineProgressMeter(
