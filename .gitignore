@@ -11,7 +11,7 @@ __pycache__
 *.xlsx
 *.spec
 *.png
-*.ico
+
 test.py
 chrome-win
 *html
