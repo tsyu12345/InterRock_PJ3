@@ -149,7 +149,7 @@ class Scraping:
                     wait.until(EC.visibility_of_all_elements_located)
                     html = self.driver.page_source
                     try:
-                        self.extraction(html, index)
+                        self.__extraction(html, index)
                         print(self.sheet.max_row)
                     except:#抽出処理時のみ全例外をスルー
                         pass
@@ -218,29 +218,40 @@ class Scraping:
         self.sheet.freeze_panes = "A2"
         self.book.save(self.path)
 
-    def extraction(self, html, index):
+    def __extraction(self, html, index):
         soup = bs(html, 'lxml')
         #print(html)
-        perm_day = soup.select_one("div.clr > div > div.scroll-pane > table.re_summ_4 > tbody > tr > td > a").get_text()
-        perm_day = self.wareki_conv(perm_day)
+        perm_day_tag = soup.select_one("div.clr > div > div.scroll-pane > table.re_summ_4 > tbody > tr > td > a")
+        perm_day = perm_day_tag.get_text() if perm_day_tag != None else None
+        perm_day = self.wareki_conv(perm_day) if perm_day != None else None
         self.sheet.cell(row=index, column=1, value=perm_day)
         #print(index, end=" ")
         #print(self.sheet.cell(row=index, column=1).value)
-        perm_num_str = soup.select_one("#input > div.clr > table > tbody > tr > td").get_text()
-        perm_num = perm_num_str.split("　")[1]
+        perm_num_str_tag = soup.select_one("#input > div.clr > table > tbody > tr > td")
+        perm_num_str = perm_num_str_tag.get_text() if perm_num_str_tag != None else None
+        perm_num = perm_num_str.split("　")[1] if perm_num_str != None else None
         self.sheet.cell(row=index, column=2, value=perm_num)
-        name_kana = soup.select_one("#input > div:nth-child(1) > table > tbody > tr:nth-child(2) > td > p").get_text()
+        
+        name_kana_tag = soup.select_one("#input > div:nth-child(1) > table > tbody > tr:nth-child(2) > td > p")
+        name_kana = name_kana_tag.get_text() if name_kana_tag != None else None
         self.sheet.cell(row=index, column=3, value=name_kana)
-        com_name = soup.select_one("#input > div:nth-child(1) > table > tbody > tr:nth-child(2) > td").get_text()
-        com_name = com_name.replace(name_kana, "")
+        
+        com_name_tag = soup.select_one(("#input > div:nth-child(1) > table > tbody > tr:nth-child(2) > td"))
+        com_name_str = com_name_tag.get_text() if com_name_tag != None else None
+        com_name = com_name_str.replace(name_kana, "") if com_name_str != None else None
         self.sheet.cell(row=index, column=4, value=com_name)
-        ceo_kana = soup.select_one("#input > div:nth-child(1) > table > tbody > tr:nth-child(3) > td > p").get_text()
+
+        ceo_kana_tag = soup.select_one("#input > div:nth-child(1) > table > tbody > tr:nth-child(3) > td > p")
+        ceo_kana = ceo_kana_tag.get_text() if ceo_kana_tag != None else None
         self.sheet.cell(row=index, column=5, value=ceo_kana)
-        ceo_name = soup.select_one("#input > div:nth-child(1) > table > tbody > tr:nth-child(3) > td").get_text()
-        ceo_name = ceo_name.replace(ceo_kana, "")
+
+        ceo_name_tag = soup.select_one("#input > div:nth-child(1) > table > tbody > tr:nth-child(3) > td")
+        ceo_name_str = ceo_name_tag.get_text() if ceo_name_tag != None else None
+        ceo_name = ceo_name_str.replace(ceo_kana, "") if ceo_name_str != None else None
         self.sheet.cell(row=index, column=6, value=ceo_name)
         #住所処理系
-        address_data = soup.select_one('#input > div:nth-child(1) > table > tbody > tr:nth-child(4) > td').get_text()
+        address_data_tag = soup.select_one('#input > div:nth-child(1) > table > tbody > tr:nth-child(4) > td')
+        address_data = address_data_tag.get_text()
         post_obj = re.search('[0-9]{3}-[0-9]{4}', address_data)
         post_num = post_obj.group()
         self.sheet.cell(row=index, column=7, value=post_num)
@@ -252,17 +263,24 @@ class Scraping:
         muni = re.split('東京都|北海道|(?:京都|大阪)府|.{2,3}県', comp_address_data[1])#市区町村
         self.sheet.cell(row=index, column=10, value=muni[1])
         
-        tel = soup.select_one('#input > div:nth-child(1) > table > tbody > tr:nth-child(5) > td').get_text()
+        tel_tag = soup.select_one('#input > div:nth-child(1) > table > tbody > tr:nth-child(5) > td')
+        tel = tel_tag.get_text() if tel_tag != None else None
         self.sheet.cell(row=index, column=11, value=tel)
 
-        com_class = soup.select_one('table.re_summ_2 > tbody > tr:nth-child(1) > td').get_text()
+        com_class_tag = soup.select_one('table.re_summ_2 > tbody > tr:nth-child(1) > td')
+        com_class = com_class_tag.get_text() if com_class_tag != None else None
         self.sheet.cell(row=index, column=12, value=com_class)
-        com_money = soup.select_one('table.re_summ_2 > tbody > tr.tdnum > td').get_text()
-        com_money = com_money.replace(",", "")
-        com_money = com_money.replace("千円", "")
-        com_money = int(com_money)
+
+        com_money_tag = soup.select_one('table.re_summ_2 > tbody > tr.tdnum > td')
+        com_money = com_money_tag.get_text() if com_money_tag != None else None
+        if com_money != None:
+            com_money = com_money.replace(",", "")
+            com_money = com_money.replace("千円", "")
+            com_money = int(com_money)
         self.sheet.cell(row=index, column=13, value=com_money)
-        kengyou = soup.select_one('table.re_summ_2 > tbody > tr:nth-child(3) > td').get_text()
+
+        kengyou_tag = soup.select_one('table.re_summ_2 > tbody > tr:nth-child(3) > td')
+        kengyou = kengyou_tag.get_text() if kengyou_tag != None else None
         self.sheet.cell(row=index, column=14, value=kengyou)
 
         #表処理系
@@ -276,7 +294,7 @@ class Scraping:
         perm_period = soup.select_one('div.clr > div > table.re_summ_5 > tbody > tr > td').get_text()
         self.sheet.cell(row=index, column=self.sheet.max_column, value=perm_period)
 
-    def wareki_conv(self, day_data):
+    def wareki_conv(self, day_data:str):
         j2w = jeraconv.jeraconv.J2W()
         day_data = day_data.replace("R", "令和")
         day_data = day_data.replace("H", "平成")
