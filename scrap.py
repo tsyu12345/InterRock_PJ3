@@ -12,6 +12,8 @@ from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup as bs
 import time
 
+#TODO:[hotfix/RENEW20220521]ページ上の要素のセレクタ変更に伴う更新
+
 class Scraping:
     
     def __init__(self, path):
