@@ -22,9 +22,4 @@ class AreaSelect(AbsGUIComponent):
         ]
         
         super().__init__(layout)
-        
-
-class AreaSelectCheckBox(AbsGUIComponent):
-    """_summary_\n
-    都道府県選択ウィンドウでの、エリア選択チェックボックス
-    """
+    
